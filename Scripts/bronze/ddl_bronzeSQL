@@ -1,0 +1,82 @@
+/*
+=============================================================================
+DDL Script: Create tables
+=============================================================================
+Script Purpose:
+  This script creates tables in the 'bronze' schema, dropping existing tables
+  if they already exist.
+Run this script to re-defim=ne the DDL structure of 'bronze' Tables
+=============================================================================
+*/
+
+IF OBJECT_ID ('bronze.crm_customer_info', 'U') IS NOT NULL
+	DROP TABLE bronze.crm_customer_info;
+CREATE TABLE bronze.crm_customer_info(
+cust_id INT,
+cust_key NVARCHAR(50),
+cust_firstname NVARCHAR(50),
+cust_lastname NVARCHAR(50),
+cust_material_status NVARCHAR(50),
+cust_gender NVARCHAR(50),
+cust_create_date DATE
+);
+
+IF OBJECT_ID ('bronze.crm_product_info', 'U') IS NOT NULL
+	DROP TABLE bronze.crm_product_info;
+CREATE TABLE bronze.crm_product_info(
+prod_id INT,
+prod_key NVARCHAR(50),
+prod_name NVARCHAR(50),
+prod_cost INT,
+prod_line NVARCHAR(50),
+prod_start_date DATETIME,
+prod_end_date DATETIME
+);
+
+IF OBJECT_ID ('bronze.crm_sales_orders', 'U') IS NOT NULL
+	DROP TABLE bronze.crm_sales_orders;
+CREATE TABLE bronze.crm_sales_orders(
+sls_ord_number NVARCHAR(50),
+sls_ord_key NVARCHAR(50),
+sls_cust_id INT,
+sls_ord_date INT,
+sls_ship_date INT,
+sls_due_date INT,
+sls_sales INT,
+sls_quantity INT,
+sls_price INT
+);
+
+IF OBJECT_ID('bronze.erp_customer_info', 'U') IS NOT NULL
+    DROP TABLE bronze.erp_customer_info;
+GO
+
+CREATE TABLE bronze.erp_customer_info (
+    cust_id NVARCHAR(50),
+    cust_bdate DATE,
+    cust_gender NVARCHAR(50)
+);
+GO
+
+IF OBJECT_ID ('bronze.erp_customer_loc', 'U') IS NOT NULL
+    DROP TABLE bronze.erp_customer_loc;
+GO
+
+CREATE TABLE bronze.erp_customer_loc(
+    cust_id NVARCHAR(50),
+    cust_country NVARCHAR(50)
+);
+GO
+
+
+IF OBJECT_ID ('bronze.erp_product_cat', 'U') IS NOT NULL
+    DROP TABLE bronze.erp_product_cat;
+GO
+
+CREATE TABLE bronze.erp_product_cat(
+    prod_cat_id NVARCHAR(50),
+    prod_cat_category NVARCHAR(50),
+    prod_cat_subcat NVARCHAR(50),
+    prod_cat_maintainance NVARCHAR(50)
+);
+GO
