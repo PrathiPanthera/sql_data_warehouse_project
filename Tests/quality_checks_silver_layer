@@ -1,1 +1,159 @@
+/*
+===============================================================================
+Quality Checks
+===============================================================================
+Script Purpose:
+    This script performs various quality checks for data consistency, accuracy, 
+    and standardization across the 'silver' layer. It includes checks for:
+    - Null or duplicate primary keys.
+    - Unwanted spaces in string fields.
+    - Data standardization and consistency.
+    - Invalid date ranges and orders.
+    - Data consistency between related fields.
 
+Usage Notes:
+    - Run these checks after data loading Silver Layer.
+    - Investigate and resolve any discrepancies found during the checks.
+===============================================================================
+*/
+
+-- ====================================================================
+-- Checking 'silver.crm_product_info'
+-- ====================================================================
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    cust_id,
+    COUNT(*) 
+FROM silver.crm_customer_info
+GROUP BY cust_key
+HAVING COUNT(*) > 1 OR cust_id IS NULL;
+
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    cust_key 
+FROM silver.crm_customer_info
+WHERE cust_key != TRIM(cust_key);
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cust_marital_status 
+FROM silver.crm_customer_info;
+
+-- ====================================================================
+-- Checking 'silver.crm_product_info'
+-- ====================================================================
+-- Check for NULLs or Duplicates in Primary Key
+-- Expectation: No Results
+SELECT 
+    prod_id,
+    COUNT(*) 
+FROM silver.crm_product_info
+GROUP BY prod_id
+HAVING COUNT(*) > 1 OR prod_id IS NULL;
+
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    prod_name 
+FROM silver.crm_product_info
+WHERE prod_name != TRIM(prod_name);
+
+-- Check for NULLs or Negative Values in Cost
+-- Expectation: No Results
+SELECT 
+    prod_cost 
+FROM silver.crm_product_info
+WHERE prod_cost < 0 OR prod_cost IS NULL;
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    prod_line 
+FROM silver.crm_product_info;
+
+-- Check for Invalid Date Orders (Start Date > End Date)
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.crm_product_info
+WHERE prod_end_date < prod_start_date;
+
+-- ====================================================================
+-- Checking 'silver.crm_sales_details'
+-- ====================================================================
+-- Check for Invalid Dates
+-- Expectation: No Invalid Dates
+SELECT 
+    NULLIF(sls_due_date, 0) AS sls_due_dt 
+FROM bronze.crm_sales_orders
+WHERE sls_due_date <= 0 
+    OR LEN(sls_due_date) != 8 
+    OR sls_due_date > 20500101 
+    OR sls_due_date < 19000101;
+
+-- Check for Invalid Date Orders (Order Date > Shipping/Due Dates)
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.crm_sales_orders
+WHERE sls_ship_date > sls_ship_date 
+   OR sls_ship_date > sls_due_date;
+
+-- Check Data Consistency: Sales = Quantity * Price
+-- Expectation: No Results
+SELECT DISTINCT 
+    sls_sales,
+    sls_quantity,
+    sls_price 
+FROM silver.crm_sales_orders
+WHERE sls_sales != sls_quantity * sls_price
+   OR sls_sales IS NULL 
+   OR sls_quantity IS NULL 
+   OR sls_price IS NULL
+   OR sls_sales <= 0 
+   OR sls_quantity <= 0 
+   OR sls_price <= 0
+ORDER BY sls_sales, sls_quantity, sls_price;
+
+-- ====================================================================
+-- Checking 'silver.erp_customer_info'
+-- ====================================================================
+-- Identify Out-of-Range Dates
+-- Expectation: Birthdates between 1924-01-01 and Today
+SELECT DISTINCT 
+    cust_bdate 
+FROM silver.erp_customer_info
+WHERE cust_bdate < '1924-01-01' 
+   OR cust_bdate > GETDATE();
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cust_gender
+FROM silver.erp_customer_info;
+
+-- ====================================================================
+-- Checking 'silver.erp_customer_loc'
+-- ====================================================================
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    cust_country 
+FROM silver.erp_customer_loc
+ORDER BY cust_country;
+
+-- ====================================================================
+-- Checking 'silver.erp_customer_cat'
+-- ====================================================================
+-- Check for Unwanted Spaces
+-- Expectation: No Results
+SELECT 
+    * 
+FROM silver.erp_product_cat
+WHERE prod_cat_id != TRIM(prod_cat_id) 
+   OR prod_cat_subcat != TRIM(prod_cat_subcat) 
+   OR prod_cat_maintainance != TRIM(prod_cat_maintainance);
+
+-- Data Standardization & Consistency
+SELECT DISTINCT 
+    prod_cat_maintainance 
+FROM silver.erp_product_cat;
